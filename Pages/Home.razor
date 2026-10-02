@@ -1,0 +1,96 @@
+﻿@page "/"
+@inject ArticleService ArticleService
+
+<PageTitle>Accueil · AchatRatio</PageTitle>
+
+<div class="p-4 p-md-5 mb-4 bg-light rounded-3">
+    <h1 class="display-5 fw-bold">AchatRatio</h1>
+    <p class="col-md-8 fs-5">
+        Une paire de chaussures à 45 € qui dure 2 ans coûte <strong>22,50 €/an</strong>.
+        Une paire à 160 € qui dure 10 ans coûte <strong>16 €/an</strong>.
+        Mesurez le coût réel de vos achats — et achetez mieux.
+    </p>
+    <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-primary btn-lg" href="/article">Ajouter un achat</a>
+        <a class="btn btn-outline-secondary btn-lg" href="/articles">Mes articles</a>
+        <a class="btn btn-outline-secondary btn-lg" href="/simulateur">Simuler un achat</a>
+    </div>
+</div>
+
+@if (_nb > 0)
+{
+    <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+            <div class="card text-center h-100"><div class="card-body">
+                <div class="fs-3 fw-bold">@_nb</div>
+                <div class="text-muted small">articles suivis</div>
+            </div></div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card text-center h-100"><div class="card-body">
+                <div class="fs-3 fw-bold">@(_scoreMoyen?.ToString("0.##") ?? "—")<span class="fs-6 text-muted">/100</span></div>
+                <div class="text-muted small">score moyen</div>
+            </div></div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card text-center h-100"><div class="card-body">
+                <div class="fs-6 fw-bold text-truncate">@(_meilleurNom ?? "—")</div>
+                @if (_meilleurLettre is char lettre)
+                {
+                    <div class="d-flex justify-content-center mt-1">
+                        <RatioBadge Lettre="lettre" Score="_meilleurScore" />
+                    </div>
+                }
+                <div class="text-muted small">meilleur ratio</div>
+            </div></div>
+        </div>
+    </div>
+}
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card h-100"><div class="card-body">
+            <h2 class="h5">1 · Enregistrez</h2>
+            <p class="text-muted small mb-0">Nom, prix, date d'achat et une note de qualité sur 10.</p>
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100"><div class="card-body">
+            <h2 class="h5">2 · Suivez</h2>
+            <p class="text-muted small mb-0">Quand l'article rend l'âme, marquez-le « Terminé » : le calcul devient définitif.</p>
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100"><div class="card-body">
+            <h2 class="h5">3 · Comparez</h2>
+            <p class="text-muted small mb-0">La lettre A–E classe chaque achat et guide les suivants.</p>
+        </div></div>
+    </div>
+</div>
+
+@code {
+    private int _nb;
+    private double? _scoreMoyen;
+    private string? _meilleurNom;
+    private char? _meilleurLettre;
+    private double _meilleurScore;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ArticleService.ChargerAsync();
+        _nb = ArticleService.Articles.Count;
+
+        var scores = ArticleService.Articles
+            .Select(a => (Article: a, R: RatioCalculator.Calculer(a)))
+            .Where(x => x.R.Score is not null)
+            .ToList();
+
+        if (scores.Count == 0) return;
+
+        _scoreMoyen = scores.Average(x => x.R.Score);
+        var top = scores.OrderByDescending(x => x.R.Score).First();
+        _meilleurNom = top.Article.Nom;
+        _meilleurLettre = top.R.Lettre;
+        _meilleurScore = top.R.Score!.Value;
+    }
+}

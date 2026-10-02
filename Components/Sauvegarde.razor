@@ -1,0 +1,183 @@
+@inject ArticleService ArticleService
+@inject SupabaseService Supabase
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+@implements IDisposable
+
+<br/>
+
+<div class="card"><div class="card-body">
+    <h2 class="h5 card-title">💾 Sauvegarde & synchronisation</h2>
+
+    <div class="section-libelle mt-2">Fichier (toujours disponible, même hors-ligne)</div>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+        <button type="button" class="btn btn-outline-primary btn-sm" @onclick="Exporter">
+            ⬇️ Exporter
+        </button>
+        <div class="flex-grow-1" style="max-width:280px">
+            <InputFile class="form-control form-control-sm" accept=".json,application/json"
+                       OnChange="Importer" />
+        </div>
+    </div>
+
+    <div class="section-libelle mt-3">Cloud (Supabase)</div>
+
+    @if (!Supabase.EstConfigure)
+    {
+        <div class="row g-2">
+            <div class="col-12">
+                <input type="url" class="form-control form-control-sm"
+                       placeholder="URL du projet — https://xxxx.supabase.co" @bind="_url" />
+            </div>
+            <div class="col-12">
+                <input type="password" class="form-control form-control-sm"
+                       placeholder="Clé anonyme (anon public — Settings → API)" @bind="_cle" />
+            </div>
+            <div class="col-12">
+                <input type="password" class="form-control form-control-sm"
+                       placeholder="Clé app (facultative — seulement si durcissement RLS, étape 6)"
+                       @bind="_cleApp" />
+            </div>
+            <div class="col-12">
+                <button type="button" class="btn btn-primary btn-sm" disabled="@_occupe" @onclick="Connecter">
+                    ☁️ Connecter &amp; synchroniser
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            @if (ArticleService.DerniereErreur is null)
+            {
+                <span class="badge text-bg-success">☁️ Synchronisé</span>
+            }
+            else
+            {
+                <span class="badge text-bg-warning">☁️ Hors ligne</span>
+            }
+            @if (ArticleService.ModificationsEnAttente)
+            {
+                <span class="badge text-bg-secondary">envois en attente</span>
+            }
+            <button type="button" class="btn btn-sm btn-outline-primary" disabled="@_occupe"
+                    @onclick="PousserCloud">⬆️ Envoyer cet appareil</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_occupe"
+                    @onclick="RecupererCloud">⬇️ Récupérer le cloud</button>
+            <button type="button" class="btn btn-sm btn-outline-danger ms-auto"
+                    @onclick="DeconnecterCloud">Déconnecter</button>
+        </div>
+
+        @if (ArticleService.DerniereErreur is not null)
+        {
+            <div class="alert alert-warning small mt-2 mb-0 py-2">
+                @ArticleService.DerniereErreur — vos modifications sont conservées localement
+                et seront envoyées au prochain démarrage en ligne.
+            </div>
+        }
+    }
+
+    @if (_message is not null)
+    {
+        <div class="alert @(_erreur ? "alert-danger" : "alert-success") small mt-3 mb-0">
+            @_message
+        </div>
+    }
+</div></div>
+
+@code {
+    private string _url = "";
+    private string _cle = "";
+    private string _cleApp = "";
+    private string? _message;
+    private bool _erreur;
+    private bool _occupe;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ArticleService.Changed += SurChangement;
+        await Supabase.InitialiserAsync();
+    }
+
+    private void SurChangement() => StateHasChanged();
+
+    private async Task Exporter()
+    {
+        _message = null; _erreur = false;
+        var json = ArticleService.ExporterJson();
+        var nom = $"achatratio-sauvegarde-{DateTime.Today:yyyy-MM-dd}.json";
+        await JS.InvokeVoidAsync("achatRatio.telechargerFichier", nom, json);
+    }
+
+    private async Task Importer(InputFileChangeEventArgs e)
+    {
+        _message = null; _erreur = false;
+        try
+        {
+            using var ms = new MemoryStream();
+            await e.File.OpenReadStream(maxAllowedSize: 20 * 1024 * 1024).CopyToAsync(ms);
+            var json = System.Text.Encoding.UTF8.GetString(ms.ToArray());
+
+            var nb = await ArticleService.ImporterJsonAsync(json);
+            _message = $"Import réussi : {nb} article(s) — rechargement…";
+
+            await Task.Delay(1500);
+            Nav.NavigateTo("/dashboard", forceLoad: true);
+        }
+        catch (Exception ex) when (ex is System.Text.Json.JsonException
+                                    or System.IO.InvalidDataException)
+        {
+            _erreur = true;
+            _message = "Fichier invalide : ce n'est pas une sauvegarde AchatRatio (ou elle est corrompue).";
+        }
+    }
+
+    private async Task Connecter()
+    {
+        _message = null; _erreur = false; _occupe = true;
+        try
+        {
+            await Supabase.TesterAsync(_url, _cle, _cleApp);
+            await Supabase.ConfigurerAsync(_url, _cle, _cleApp);
+
+            // Navigateur vide → on RÉCUPÈRE le cloud (nouvel appareil).
+            // Navigateur plein → on pousse ses données (premier appareil).
+            var ok = await (ArticleService.Articles.Count > 0
+                ? ArticleService.EnvoyerToutAsync()
+                : ArticleService.RecupererToutAsync());
+        }
+        catch (Exception ex)
+        {
+            _erreur = true;
+            _message = $"Connexion impossible : {ex.Message}";
+        }
+        finally { _occupe = false; }
+    }
+
+    private async Task PousserCloud()
+    {
+        _message = null; _erreur = false; _occupe = true;
+        var ok = await ArticleService.EnvoyerToutAsync();
+        _erreur = !ok;
+        _message = ok ? "☁️ Données envoyées au cloud." : "Envoi impossible — vérifiez votre connexion.";
+        _occupe = false;
+    }
+
+    private async Task RecupererCloud()
+    {
+        _message = null; _erreur = false; _occupe = true;
+        var ok = await ArticleService.RecupererToutAsync();
+        _erreur = !ok;
+        _message = ok ? "☁️ Données récupérées depuis le cloud." : "Récupération impossible — vérifiez votre connexion.";
+        _occupe = false;
+    }
+
+    private async Task DeconnecterCloud()
+    {
+        await Supabase.DeconnecterAsync();
+        _erreur = false;
+        _message = "Synchronisation désactivée — les données restent dans ce navigateur.";
+    }
+
+    public void Dispose() => ArticleService.Changed -= SurChangement;
+}

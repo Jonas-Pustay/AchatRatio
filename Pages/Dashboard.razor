@@ -1,0 +1,206 @@
+@page "/dashboard"
+@inject ArticleService ArticleService
+
+<PageTitle>Tableau de bord · AchatRatio</PageTitle>
+
+<div class="page-entete">
+    <div>
+        <h1 class="page-titre">Tableau de bord</h1>
+        <p class="page-sous-titre">@_lignes.Count articles suivis · @_totalInvesti.ToString("0 €") investis</p>
+    </div>
+</div>
+
+@if (_lignes.Count == 0)
+{
+    <div class="etat-vide">
+        <span class="etat-vide-icone">📈</span>
+        <h2 class="h4">Le tableau de bord attend ses données</h2>
+        <p class="text-muted">Ajoutez des <a href="/article">articles</a> pour l'alimenter.</p>
+    </div>
+}
+else
+{
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="kpi">
+                <span class="kpi-icone">💰</span>
+                <div class="min-w-0">
+                    <div class="kpi-valeur text-truncate">@_totalInvesti.ToString("0 €")</div>
+                    <div class="kpi-libelle">investis</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="kpi">
+                <span class="kpi-icone kpi-icone--bleu">📅</span>
+                <div>
+                    <div class="kpi-valeur">@_coutMoyenAn.ToString("0.## €")</div>
+                    <div class="kpi-libelle">coût moyen / an</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="kpi">
+                <span class="kpi-icone kpi-icone--orange">🏆</span>
+                <div>
+                    <div class="kpi-valeur">@_scoreMoyen.ToString("0.##")<span class="kpi-suffixe">/100</span></div>
+                    <div class="kpi-libelle">score moyen</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="kpi">
+                <span class="kpi-icone kpi-icone--violet">📦</span>
+                <div>
+                    <div class="kpi-valeur">@_lignes.Count</div>
+                    <div class="kpi-libelle">articles suivis</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6"><div class="card h-100"><div class="card-body">
+            <h2 class="h5 card-title">🏆 Meilleurs ratios</h2>
+            <Classement Items="_top" />
+        </div></div></div>
+        <div class="col-lg-6"><div class="card h-100"><div class="card-body">
+            <h2 class="h5 card-title">💀 Pires ratios</h2>
+            <Classement Items="_flop" />
+        </div></div></div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-6"><div class="card h-100"><div class="card-body">
+            <h2 class="h5 card-title">Durée de vie moyenne par marque</h2>
+            @if (_marques.Count == 0)
+            {
+                <p class="text-muted small mb-0">Renseignez des marques pour comparer leur fiabilité.</p>
+            }
+            else
+            {
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Marque</th>
+                            <th class="text-end">Durée moy.</th>
+                            <th class="text-end">Note moy.</th>
+                            <th class="text-end text-muted">Nb</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in _marques)
+                        {
+                            <tr>
+                                <td>@m.Marque</td>
+                                <td class="text-end">@RatioCalculator.FormatAnnees(m.DureeAnnees)</td>
+                                <td class="text-end">@m.NoteMoyenne.ToString("0.#")/10</td>
+                                <td class="text-end text-muted">@m.Nb</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div></div></div>
+
+        <div class="col-lg-6">
+            <div class="card mb-3"><div class="card-body">
+                <h2 class="h5 card-title">💰 Économies réalisées en achetant la qualité</h2>
+                @if (_nbComparaisons == 0)
+                {
+                    <p class="text-muted small mb-0">
+                        Renseignez « prix de l'équivalent bas de gamme » et « durée de vie bas de gamme »
+                        sur vos articles pour estimer vos économies.
+                    </p>
+                }
+                else
+                {
+                    <p class="eco-valeur mb-1 @(_economies >= 0 ? "eco-pos" : "eco-neg")">
+                        @_economies.ToString("0.## €") @(_economies >= 0 ? "économisés" : "de surcoût")
+                    </p>
+                    <p class="text-muted small mb-0">
+                        Sur @_nbComparaisons article(s) comparable(s) —
+                        @Math.Max(0, _remplacementsEvites) remplacement(s) bas de gamme évité(s).
+                    </p>
+                }
+            </div></div>
+
+            <div class="card"><div class="card-body">
+                <h2 class="h5 card-title">Score moyen par catégorie</h2>
+                @foreach (var c in _categories)
+                {
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>@c.Categorie <span class="text-muted">(@c.Nb)</span></span>
+                        <span>@c.ScoreMoyen.ToString("0.##")/100</span>
+                    </div>
+                    <div class="progress mb-2" style="height:1.25rem">
+                        <div class="progress-bar" role="progressbar"
+                             style="@LargeurBarre(c.ScoreMoyen)"
+                             aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                }
+            </div></div>
+        </div>
+    </div>
+}
+
+<Sauvegarde />
+
+@code {
+    private List<ArticleEvalue> _lignes = [];
+    private List<ArticleEvalue> _top = [];
+    private List<ArticleEvalue> _flop = [];
+    private List<(string Marque, double DureeAnnees, double NoteMoyenne, int Nb)> _marques = [];
+    private List<(string Categorie, double ScoreMoyen, int Nb)> _categories = [];
+
+    private decimal _totalInvesti;
+    private decimal _coutMoyenAn;
+    private double _scoreMoyen;
+    private decimal _economies;
+    private int _remplacementsEvites;
+    private int _nbComparaisons;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ArticleService.ChargerAsync();
+
+        _lignes = [.. ArticleService.Articles.Select(a => new ArticleEvalue(a, RatioCalculator.Calculer(a)))];
+
+        _totalInvesti = _lignes.Sum(l => l.Article.PrixAchat);
+
+        var fiables = _lignes.Where(l => l.Ratio.EstimationFiable).ToList();
+        _coutMoyenAn = fiables.Count > 0 ? fiables.Average(l => l.Ratio.CoutParAn) : 0;
+
+        var notes = _lignes.Where(l => l.Ratio.Score is not null).ToList();
+        _scoreMoyen = notes.Count > 0 ? notes.Average(l => l.Ratio.Score!.Value) : 0;
+
+        _top  = [.. notes.OrderByDescending(l => l.Ratio.Score).Take(3)];
+        _flop = [.. notes.OrderBy(l => l.Ratio.Score).Take(3)];
+
+        _marques = [.. _lignes
+            .Where(l => !string.IsNullOrWhiteSpace(l.Article.Marque))
+            .GroupBy(l => l.Article.Marque.Trim())
+            .Select(g => (Marque: g.Key,
+                          DureeAnnees: g.Average(x => x.Ratio.DureeVieJours / 365.25),
+                          NoteMoyenne: g.Average(x => x.Article.Note),
+                          Nb: g.Count()))
+            .OrderByDescending(m => m.DureeAnnees)];
+
+        _categories = [.. notes
+            .GroupBy(l => l.Article.Categorie)
+            .Select(g => (Categorie: g.Key, ScoreMoyen: g.Average(x => x.Ratio.Score!.Value), Nb: g.Count()))
+            .OrderByDescending(c => c.ScoreMoyen)];
+
+        foreach (var l in _lignes)
+        {
+            var eco = RatioCalculator.EstimerEconomie(l.Article);
+            if (eco is null) continue;
+            _nbComparaisons++;
+            _economies += eco.Value.Economie;
+            _remplacementsEvites += Math.Max(0, eco.Value.RemplacementsEvites);
+        }
+    }
+
+    private static string LargeurBarre(double score) =>
+        FormattableString.Invariant($"width:{Math.Clamp(score, 0, 100):0.##}%");
+}

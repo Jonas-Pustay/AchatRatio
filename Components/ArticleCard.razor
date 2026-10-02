@@ -1,0 +1,52 @@
+@inject NavigationManager Nav
+
+@{ var r = RatioCalculator.Calculer(Item); }
+
+<div class="card article-card h-100" @onclick="OuvrirFiche">
+    <div class="image-zone">
+        <div class="image-article" style="background-image:url('@ImageSrc')"></div>
+
+        @if (r.Lettre is char lettre)
+        {
+            <div class="carte-score">
+                <RatioBadge Lettre="lettre" Score="r.Score!.Value" />
+            </div>
+        }
+
+        @if (Item.Statut == StatutArticle.Termine)
+        {
+            <span class="carte-statut">Terminé</span>
+        }
+    </div>
+
+    <div class="card-body">
+        <h6 class="carte-nom text-truncate">@Item.Nom</h6>
+        <div class="text-muted small text-truncate">@Item.Marque · @Item.Categorie</div>
+
+        @if (r.Lettre is not null)
+        {
+            <div class="d-flex align-items-baseline justify-content-between gap-2 flex-wrap mt-2">
+                <div class="carte-cout">@r.CoutParAn.ToString("0.##") €<span>/an</span></div>
+                <div class="small text-muted">@RatioCalculator.FormatJours(r.DureeVieJours) d'usage</div>
+            </div>
+        }
+        else
+        {
+            <div class="mt-2">
+                <span class="badge text-bg-secondary">⏳ Trop tôt pour juger</span>
+            </div>
+        }
+
+        <div class="mt-1"><NoteEtoiles Note="Item.Note" /></div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Article Item { get; set; } = default!;
+
+    private string ImageSrc => string.IsNullOrWhiteSpace(Item.ImageUrl)
+        ? "img/placeholder.svg"
+        : Item.ImageUrl;
+
+    private void OuvrirFiche() => Nav.NavigateTo("/article/" + Item.Id);
+}

@@ -1,0 +1,107 @@
+.hero {
+    display: grid;
+    grid-template-columns: 1.05fr .95fr;
+    gap: 2.5rem;
+    align-items: center;
+    padding: 2.4rem;
+    border-radius: 16px;
+    color: #fff;
+    background:
+        radial-gradient(circle at 88% 15%, rgba(52, 211, 153, .14), transparent 45%),
+        linear-gradient(135deg, var(--ar-sombre-2) 0%, var(--ar-sombre) 100%);
+    box-shadow: 0 12px 32px rgba(16, 26, 38, .22);
+    margin-bottom: 1.5rem;
+}
+
+.hero-etiquette {
+    display: inline-block;
+    background: rgba(52, 211, 153, .14);
+    color: var(--ar-accent-vif);
+    font-size: .68rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .1em;
+    padding: .25rem .7rem; border-radius: 99px;
+    margin-bottom: 1rem;
+}
+
+.hero-titre {
+    font-size: 2.3rem; font-weight: 800;
+    line-height: 1.12; letter-spacing: -.02em;
+    color: #fff; margin: 0 0 .75rem;
+}
+
+.hero-texte { color: rgba(255, 255, 255, .72); max-width: 34rem; margin-bottom: 0; }
+
+.hero-actions { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: 1.5rem; }
+
+.hero-btn-fantome {
+    background: rgba(255, 255, 255, .08);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, .22);
+}
+.hero-btn-fantome:hover {
+    background: rgba(255, 255, 255, .16);
+    color: #fff;
+    border-color: rgba(255, 255, 255, .35);
+}
+
+/* ── Démo chiffrée ── */
+.hero-demo { display: flex; flex-direction: column; gap: .6rem; }
+
+.demo-carte {
+    background: rgba(255, 255, 255, .06);
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 12px;
+    padding: .85rem 1.05rem;
+}
+
+.demo-entete {
+    display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+    font-size: .65rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .1em;
+    color: rgba(255, 255, 255, .55);
+    margin-bottom: .3rem;
+}
+
+.demo-gagnant {
+    background: rgba(52, 211, 153, .18);
+    color: var(--ar-accent-vif);
+    border-radius: 99px; padding: .12rem .55rem; letter-spacing: .05em;
+}
+
+.demo-lignes {
+    display: flex; flex-direction: column;
+    font-size: .85rem; color: rgba(255, 255, 255, .85); line-height: 1.45;
+}
+
+.demo-resultat {
+    font-size: 1.55rem; font-weight: 800; color: #fff;
+    margin-top: .3rem; font-variant-numeric: tabular-nums;
+}
+.demo-resultat small { font-size: .75rem; font-weight: 500; color: rgba(255, 255, 255, .55); }
+
+.demo-qualite { border-color: rgba(52, 211, 153, .45); }
+.demo-qualite .demo-resultat { color: var(--ar-accent-vif); }
+
+.hero-vs {
+    text-align: center;
+    font-size: .68rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .15em;
+    color: rgba(255, 255, 255, .4);
+}
+
+/* ── Étapes ── */
+.etape-numero {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 99px;
+    background: var(--ar-accent-pale); color: var(--ar-accent);
+    font-weight: 800; font-size: .9rem;
+}
+
+@media (max-width: 991.98px) {
+    .hero { grid-template-columns: 1fr; gap: 1.75rem; }
+}
+
+@media (max-width: 575.98px) {
+    .hero { padding: 1.6rem 1.3rem; }
+    .hero-titre { font-size: 1.75rem; }
+}

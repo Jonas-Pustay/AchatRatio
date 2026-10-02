@@ -1,0 +1,141 @@
+﻿@page "/simulateur"
+
+<PageTitle>Simulateur · AchatRatio</PageTitle>
+
+<div class="page-entete">
+    <div>
+        <h1 class="page-titre">Simulateur d'achat</h1>
+        <p class="page-sous-titre">Le low-cost à remplacer souvent, contre la qualité qui dure.</p>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card h-100"><div class="card-body">
+            <div class="option-entete">
+                <span class="option-puce option-puce--bas">Option A · bas de gamme</span>
+            </div>
+            <div class="row g-3">
+                <div class="col-6">
+                    <label class="form-label">Prix (€)</label>
+                    <input type="number" class="form-control" min="0" step="1" @bind="_prixA" />
+                </div>
+                <div class="col-6">
+                    <label class="form-label">Durée de vie (mois)</label>
+                    <input type="number" class="form-control" min="1" step="1" @bind="_dureeA" />
+                </div>
+            </div>
+        </div></div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100 option-qualite"><div class="card-body">
+            <div class="option-entete">
+                <span class="option-puce option-puce--qualite">Option B · qualité</span>
+            </div>
+            <div class="row g-3">
+                <div class="col-6">
+                    <label class="form-label">Prix (€)</label>
+                    <input type="number" class="form-control" min="0" step="1" @bind="_prixB" />
+                </div>
+                <div class="col-6">
+                    <label class="form-label">Durée de vie (mois)</label>
+                    <input type="number" class="form-control" min="1" step="1" @bind="_dureeB" />
+                </div>
+            </div>
+        </div></div>
+    </div>
+
+    <div class="col-12">
+        <label class="form-label d-block">Horizon de comparaison : @_horizon an(s)</label>
+        <input type="range" class="form-range" min="1" max="30" step="1"
+               @bind="_horizon" @bind:event="oninput" />
+    </div>
+</div>
+
+@if (_valide)
+{
+    <div class="card mt-3"><div class="card-body">
+        <div class="row text-center g-3 mb-3">
+            <div class="col-4">
+                <div class="sim-stat-valeur @(_meilleurTaux == 'A' ? "sim-stat-valeur--gagnant" : "text-muted")">
+                    @_coutAnA.ToString("0.##") €
+                </div>
+                <div class="sim-stat-libelle">coût annuel A</div>
+            </div>
+            <div class="col-4">
+                <div class="sim-stat-valeur @(_meilleurTaux == 'B' ? "sim-stat-valeur--gagnant" : "text-muted")">
+                    @_coutAnB.ToString("0.##") €
+                </div>
+                <div class="sim-stat-libelle">coût annuel B</div>
+            </div>
+            <div class="col-4">
+                <div class="sim-stat-valeur @(_economieHorizon >= 0 ? "sim-stat-valeur--gagnant" : "text-danger")">
+                    @Math.Abs(_economieHorizon).ToString("0.##") €
+                </div>
+                <div class="sim-stat-libelle">
+                    @(_economieHorizon >= 0 ? "économie avec B sur" : "surcoût de B sur") @_horizon an(s)
+                </div>
+            </div>
+        </div>
+
+        @if (_pointMort is null)
+        {
+            <div class="alert alert-warning mb-0">
+                L'option A reste la moins chère sur la durée : B ne rattrape jamais son surcoût d'achat.
+            </div>
+        }
+        else if (_pointMort <= _horizon)
+        {
+            <div class="alert alert-success mb-0">
+                ✅ Sur cet horizon, B est déjà rentable : elle devient moins chère au total
+                après <strong>@RatioCalculator.FormatAnnees(_pointMort.Value)</strong> d'utilisation.
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info mb-0">
+                B devient moins chère au total après <strong>@RatioCalculator.FormatAnnees(_pointMort.Value)</strong>,
+                au-delà de votre horizon de @_horizon an(s).
+            </div>
+        }
+
+        <div class="row small text-muted mt-3 g-2">
+            <div class="col-6">
+                Option A : @_unitesA achat(s) × @(_prixA.ToString("0.##")) €
+                = @_cumulA.ToString("0.##") € cumulés
+            </div>
+            <div class="col-6">
+                Option B : @_unitesB achat(s) × @(_prixB.ToString("0.##")) €
+                = @_cumulB.ToString("0.##") € cumulés
+            </div>
+        </div>
+    </div></div>
+}
+
+@code {
+    // Valeurs par défaut = l'exemple chaussures du cahier des charges
+    private decimal _prixA = 45;
+    private decimal _prixB = 160;
+    private int _dureeA = 24;    // mois
+    private int _dureeB = 120;   // mois
+    private int _horizon = 10;   // années
+
+    private bool _valide => _prixA > 0 && _prixB > 0 && _dureeA > 0 && _dureeB > 0;
+
+    private decimal _coutAnA => _prixA * 12m / _dureeA;
+    private decimal _coutAnB => _prixB * 12m / _dureeB;
+    private char _meilleurTaux => _coutAnB < _coutAnA ? 'B' : 'A';
+
+    private double _anneesA => _dureeA / 12.0;
+    private double _anneesB => _dureeB / 12.0;
+
+    private int _unitesA => (int)Math.Ceiling(_horizon / _anneesA);
+    private int _unitesB => (int)Math.Ceiling(_horizon / _anneesB);
+
+    private decimal _cumulA => _prixA * _unitesA;
+    private decimal _cumulB => _prixB * _unitesB;
+    private decimal _economieHorizon => _cumulA - _cumulB;
+
+    private double? _pointMort => RatioCalculator.PointMort(_prixA, _anneesA, _prixB, _anneesB);
+}

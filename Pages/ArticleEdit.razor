@@ -1,0 +1,242 @@
+﻿@page "/article"
+@page "/article/{Id:guid}"
+@inject ArticleService ArticleService
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<PageTitle>@(_estNouveau ? "Ajouter" : "Modifier") un article · AchatRatio</PageTitle>
+
+<div class="page-entete">
+    <div>
+        <h1 class="page-titre">@(_estNouveau ? "Ajouter un article" : "Modifier l'article")</h1>
+        <p class="page-sous-titre">Prix, date, note — le reste se calcule tout seul.</p>
+    </div>
+    <a class="btn btn-outline-secondary" href="/articles">← Retour à la liste</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+
+        <EditForm Model="_modele" OnValidSubmit="Enregistrer" class="row g-3">
+            <DataAnnotationsValidator />
+
+            @if (_erreurs.Any())
+            {
+                <div class="col-12">
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            @foreach (var e in _erreurs) { <li>@e</li> }
+                        </ul>
+                    </div>
+                </div>
+            }
+
+            <div class="col-12"><div class="section-libelle">Identité</div></div>
+
+            <div class="col-12 col-md-6">
+                <label class="form-label">Nom *</label>
+                <InputText class="form-control" @bind-Value="_modele.Nom" />
+                <ValidationMessage For="() => _modele.Nom" />
+            </div>
+
+            <div class="col-6 col-md-3">
+                <label class="form-label">Marque</label>
+                <InputText class="form-control" @bind-Value="_modele.Marque" />
+            </div>
+
+            <div class="col-6 col-md-3">
+                <label class="form-label">Catégorie</label>
+                <InputSelect class="form-select" @bind-Value="_modele.Categorie">
+                    @foreach (var c in RatioCalculator.Benchmarks.Keys)
+                    {
+                        <option value="@c">@c</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="col-12"><div class="section-libelle mt-2">Achat & suivi</div></div>
+
+            <div class="col-6 col-md-3">
+                <label class="form-label">Prix d'achat (€) *</label>
+                <InputNumber class="form-control" @bind-Value="_modele.PrixAchat" />
+                <ValidationMessage For="() => _modele.PrixAchat" />
+            </div>
+
+            <div class="col-6 col-md-3">
+                <label class="form-label">Date d'achat *</label>
+                <InputDate class="form-control" @bind-Value="_modele.DateAchat" />
+            </div>
+
+            <div class="col-12 col-md-3">
+                <label class="form-label d-block">Note qualité : @_modele.Note/10</label>
+                <input type="range" class="form-range" min="0" max="10" step="1" @bind="_modele.Note" />
+            </div>
+
+            <div class="col-12 col-md-3">
+                <label class="form-label d-block">Statut</label>
+                <InputRadioGroup @bind-Value="_modele.Statut">
+                    <div class="form-check form-check-inline">
+                        <InputRadio class="form-check-input" id="st-cours" Value="StatutArticle.EnCours" />
+                        <label class="form-check-label" for="st-cours">En cours</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <InputRadio class="form-check-input" id="st-termine" Value="StatutArticle.Termine" />
+                        <label class="form-check-label" for="st-termine">Terminé</label>
+                    </div>
+                </InputRadioGroup>
+            </div>
+
+            @if (_modele.Statut == StatutArticle.Termine)
+            {
+                <div class="col-6 col-md-3">
+                    <label class="form-label">Date de fin *</label>
+                    <InputDate class="form-control" @bind-Value="_modele.DateFin" />
+                </div>
+            }
+
+            <div class="col-12"><div class="section-libelle mt-2">Image</div></div>
+
+            <div class="col-12">
+                <div class="d-flex gap-3 align-items-start flex-wrap">
+                    @if (!string.IsNullOrWhiteSpace(ApercuImage))
+                    {
+                        <img src="@ApercuImage" class="img-thumbnail"
+                             style="width:140px;height:105px;object-fit:cover" alt="Aperçu" />
+                    }
+                    <div class="flex-grow-1">
+                        <InputFile id="champ-image" class="form-control" accept="image/*" OnChange="OnImageChoisie" />
+                        <input type="url" class="form-control mt-2" placeholder="…ou collez une URL d'image"
+                               @bind="_urlImage" />
+                        @if (_erreurImage is not null)
+                        {
+                            <div class="text-danger small mt-1">@_erreurImage</div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="zone-facultative">
+                    <div class="section-libelle">Comparaison bas de gamme — facultatif</div>
+                    <div class="row g-3">
+                        <div class="col-6 col-md-4">
+                            <label class="form-label">Prix de l'équivalent bas de gamme (€)</label>
+                            <InputNumber class="form-control" @bind-Value="_modele.PrixBasDeGamme" />
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label class="form-label">Durée de vie bas de gamme (mois)</label>
+                            <InputNumber class="form-control" @bind-Value="_modele.DureeVieBasDeGammeMois" />
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-0 mt-2">
+                        💡 Alimente l'estimation d'économies du tableau de bord.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-12 d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+                <a class="btn btn-outline-secondary" href="/articles">Annuler</a>
+                @if (!_estNouveau)
+                {
+                    <button type="button" class="btn btn-outline-danger ms-auto" @onclick="Supprimer">Supprimer</button>
+                }
+            </div>
+        </EditForm>
+
+    </div>
+</div>
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private Article _modele = new();
+    private bool _estNouveau = true;
+    private readonly List<string> _erreurs = [];
+    private string _urlImage = "";
+    private string? _imageUploadee;
+    private string? _erreurImage;
+
+    private string? ApercuImage => _imageUploadee
+        ?? (string.IsNullOrWhiteSpace(_urlImage) ? null : _urlImage);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ArticleService.ChargerAsync();
+
+        if (Id is null) return;
+
+        var existant = ArticleService.Articles.FirstOrDefault(a => a.Id == Id);
+        if (existant is null)
+        {
+            Nav.NavigateTo("/articles");
+            return;
+        }
+
+        _modele = existant.Clone();
+        _estNouveau = false;
+
+        if (existant.ImageUrl?.StartsWith("data:") == true)
+            _imageUploadee = existant.ImageUrl;
+        else
+            _urlImage = existant.ImageUrl ?? "";
+    }
+
+    private async Task OnImageChoisie(InputFileChangeEventArgs e)
+    {
+        _erreurImage = null;
+        _imageUploadee = null;
+
+        if (e.File.Size == 0) return;
+
+        if (!e.File.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+        {
+            _erreurImage = "Le fichier sélectionné n'est pas une image.";
+            return;
+        }
+
+        try
+        {
+            // Lecture + redimensionnement 100 % côté navigateur : seul le
+            // résultat compressé (~60 Ko) revient par l'interop.
+            _imageUploadee = await JS.InvokeAsync<string>(
+                "achatRatio.redimensionnerFichier", "champ-image", 512, 0.75);
+
+            if (_imageUploadee is null)
+                _erreurImage = "Aucun fichier détecté — réessayez.";
+        }
+        catch (JSException ex)
+        {
+            _erreurImage = $"Impossible de traiter cette image : {ex.Message}";
+        }
+    }
+
+    private async Task Enregistrer()
+    {
+        _erreurs.Clear();
+
+        if (_modele.Statut == StatutArticle.Termine)
+        {
+            if (_modele.DateFin is null)
+                _erreurs.Add("La date de fin est requise quand l'article est terminé.");
+            else if (_modele.DateFin < _modele.DateAchat)
+                _erreurs.Add("La date de fin doit être postérieure (ou égale) à la date d'achat.");
+        }
+        if (_erreurs.Count > 0) return;
+
+        _modele.ImageUrl = _imageUploadee
+            ?? (string.IsNullOrWhiteSpace(_urlImage) ? null : _urlImage.Trim());
+
+        await ArticleService.SauvegarderAsync(_modele);
+        Nav.NavigateTo("/articles");
+    }
+
+    private async Task Supprimer()
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", "Supprimer définitivement cet article ?"))
+            return;
+
+        await ArticleService.SupprimerAsync(_modele.Id);
+        Nav.NavigateTo("/articles");
+    }
+}

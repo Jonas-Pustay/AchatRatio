@@ -1,0 +1,37 @@
+.article-card {
+    cursor: pointer;
+    overflow: hidden;
+    transition: transform .18s ease, box-shadow .18s ease;
+}
+.article-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 26px rgba(16, 26, 38, .14);
+}
+
+.image-zone { position: relative; }
+.image-article {
+    aspect-ratio: 4 / 3;
+    background-size: cover;
+    background-position: center;
+    background-color: #e9ecef;
+}
+
+.carte-score { position: absolute; top: .6rem; right: .6rem; }
+
+.carte-statut {
+    position: absolute; bottom: .6rem; left: .6rem;
+    background: rgba(16, 26, 38, .78);
+    color: #fff;
+    font-size: .62rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .06em;
+    padding: .18rem .55rem; border-radius: 99px;
+}
+
+.carte-nom { font-weight: 700; font-size: .95rem; margin-bottom: .1rem; }
+
+.carte-cout {
+    font-size: 1.25rem; font-weight: 800;
+    color: var(--ar-encre);
+    font-variant-numeric: tabular-nums; line-height: 1.1;
+}
+.carte-cout span { font-size: .72rem; font-weight: 600; color: var(--ar-encre-2); }

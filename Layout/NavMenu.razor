@@ -1,0 +1,94 @@
+﻿@inject ArticleService ArticleService
+@implements IDisposable
+
+<div class="nav-racine">
+
+    <header class="sidebar-header">
+        <a class="brand" href="/">
+            <span class="brand-logo">€/</span>
+            <span class="brand-text">
+                <span class="brand-name">AchatRatio</span>
+                <span class="brand-tagline">Coût réel par usage</span>
+            </span>
+        </a>
+        <button class="nav-burger" type="button" title="Menu" @onclick="ToggleNavMenu">☰</button>
+    </header>
+
+    <div class="nav-corps @(collapseNavMenu ? "replie" : "")" @onclick="ToggleNavMenu">
+        <nav class="nav-list">
+            <div class="nav-section">Navigation</div>
+
+            <NavLink class="nav-item-link" href="/" Match="NavLinkMatch.All">
+                <span class="nav-icone">🏠</span> Accueil
+            </NavLink>
+
+            <NavLink class="nav-item-link" href="articles">
+                <span class="nav-icone">📦</span> Mes articles
+                @if (_nbArticles > 0)
+                {
+                    <span class="nav-badge">@_nbArticles</span>
+                }
+            </NavLink>
+
+            <NavLink class="nav-item-link" href="dashboard">
+                <span class="nav-icone">📈</span> Tableau de bord
+            </NavLink>
+
+            <NavLink class="nav-item-link" href="simulateur">
+                <span class="nav-icone">🧮</span> Simulateur
+            </NavLink>
+
+            <a class="nav-cta" href="/article">
+                <span class="nav-icone">＋</span> Ajouter un achat
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            @if (_scoreMoyen is double s)
+            {
+                <div class="footer-stat">
+                    <span class="footer-stat-valeur">@s.ToString("0")</span>
+                    <span class="footer-stat-libelle">score moyen /100</span>
+                </div>
+            }
+            else
+            {
+                <div class="footer-stat-vide">
+                    Suivez vos premiers achats pour révéler votre score.
+                </div>
+            }
+        </div>
+    </div>
+
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+    private int _nbArticles;
+    private double? _scoreMoyen;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ArticleService.Changed += SurDonneesChangees;
+        await ArticleService.ChargerAsync();
+    }
+
+    private void SurDonneesChangees()
+    {
+        _nbArticles = ArticleService.Articles.Count;
+
+        var scores = ArticleService.Articles
+            .Select(a => RatioCalculator.Calculer(a).Score)
+            .Where(s => s is not null)
+            .Select(s => s!.Value)
+            .ToList();
+
+        _scoreMoyen = scores.Count > 0 ? scores.Average() : null;
+
+        StateHasChanged();
+    }
+
+    private void ToggleNavMenu() => collapseNavMenu = !collapseNavMenu;
+
+    public void Dispose() => ArticleService.Changed -= SurDonneesChangees;
+}

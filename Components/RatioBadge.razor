@@ -1,0 +1,7 @@
+<span class="ratio-badge ratio-@(char.ToLower(Lettre))"
+      title="Score de rentabilité : @Score/100">@Lettre</span>
+
+@code {
+    [Parameter, EditorRequired] public char Lettre { get; set; }
+    [Parameter] public double Score { get; set; }
+}

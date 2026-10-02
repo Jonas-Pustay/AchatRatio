@@ -1,0 +1,53 @@
+name: Déploiement GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:          # permet aussi de le lancer à la main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Compiler et publier
+        run: dotnet publish -c Release -o public
+
+      - name: Ajuster le base href au sous-chemin GitHub Pages
+        run: |
+          INDEX="$(find public -maxdepth 2 -name index.html | head -n 1)"
+          echo "index.html : $INDEX"
+          sed -i "s|<base href=\"/\" />|<base href=\"/${{ github.event.repository.name }}/\" />|" "$INDEX"
+          grep -n "base href" "$INDEX"
+          echo "WEBDIR=$(dirname "$INDEX")" >> "$GITHUB_ENV"
+
+      - name: Configurer GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Téléverser l'artefact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ env.WEBDIR }}
+
+      - name: Déployer
+        id: deployment
+        uses: actions/deploy-pages@v4

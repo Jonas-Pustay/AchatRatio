@@ -1,0 +1,29 @@
+@if (Items.Count == 0)
+{
+    <p class="text-muted small mb-0">Pas encore assez de données (durée d'usage ≥ 45 jours requise).</p>
+}
+else
+{
+    <ol class="list-unstyled mb-0">
+        @foreach (var l in Items)
+        {
+            <li class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <span class="text-truncate me-2">
+                    @l.Article.Nom
+                    <span class="text-muted small">· @l.Article.Marque</span>
+                </span>
+                <span class="d-flex align-items-center gap-2 flex-shrink-0">
+                    <span class="small text-muted">@l.Ratio.CoutParAn.ToString("0.##") €/an</span>
+                    @if (l.Ratio.Lettre is char lettre)
+                    {
+                        <RatioBadge Lettre="lettre" Score="l.Ratio.Score ?? 0" />
+                    }
+                </span>
+            </li>
+        }
+    </ol>
+}
+
+@code {
+    [Parameter] public IReadOnlyList<ArticleEvalue> Items { get; set; } = [];
+}

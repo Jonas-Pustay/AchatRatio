@@ -1,0 +1,3 @@
+.eco-valeur { font-size: 1.9rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.eco-pos { color: var(--ar-accent); }
+.eco-neg { color: #c94f4f; }

@@ -1,0 +1,19 @@
+.ratio-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 .45rem;
+    border-radius: 99px;
+    color: #fff;
+    font-weight: 800;
+    font-size: .9rem;
+    box-shadow: 0 2px 8px rgba(16, 26, 38, .28);
+    border: 2px solid rgba(255, 255, 255, .9);
+}
+.ratio-a { background: #198754; }
+.ratio-b { background: #6fa845; }
+.ratio-c { background: #d69e2e; }
+.ratio-d { background: #dd7e33; }
+.ratio-e { background: #c94f4f; }

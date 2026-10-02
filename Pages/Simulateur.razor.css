@@ -1,0 +1,23 @@
+.option-entete { margin-bottom: 1rem; }
+
+.option-puce {
+    font-size: .62rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .08em;
+    padding: .22rem .65rem; border-radius: 99px;
+}
+.option-puce--bas { background: #eef1f4; color: var(--ar-encre-2); }
+.option-puce--qualite { background: var(--ar-accent-pale); color: var(--ar-accent); }
+
+.option-qualite {
+    border-color: rgba(25, 135, 84, .4);
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, .06);
+}
+
+.sim-stat-valeur {
+    font-size: 1.6rem; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+.sim-stat-valeur--gagnant { color: var(--ar-accent); }
+.sim-stat-libelle {
+    font-size: .7rem; color: var(--ar-encre-2);
+    text-transform: uppercase; letter-spacing: .05em;
+}

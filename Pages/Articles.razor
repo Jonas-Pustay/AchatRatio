@@ -1,0 +1,125 @@
+@page "/articles"
+@inject ArticleService ArticleService
+@implements IDisposable
+
+<PageTitle>Mes articles · AchatRatio</PageTitle>
+
+<div class="page-entete">
+    <div>
+        <h1 class="page-titre">Mes articles</h1>
+        <p class="page-sous-titre">
+            @ArticleService.Articles.Count article(s) suivi(s) · @_affiches.Count affiché(s)
+        </p>
+    </div>
+    <a class="btn btn-primary" href="/article">＋ Ajouter un achat</a>
+</div>
+
+@if (ArticleService.Articles.Count == 0)
+{
+    <div class="etat-vide">
+        <span class="etat-vide-icone">📦</span>
+        <h2 class="h4">Aucun article suivi pour l'instant</h2>
+        <p class="text-muted">Enregistrez un achat pour commencer à mesurer son coût réel.</p>
+        <a class="btn btn-primary" href="/article">Ajouter un premier article</a>
+    </div>
+}
+else
+{
+    <div class="card mb-3">
+        <div class="card-body py-2">
+            <div class="row g-2">
+                <div class="col-12 col-md-4">
+                    <input type="search" class="form-control"
+                           placeholder="🔍 Rechercher (nom, marque)…"
+                           @bind="_recherche" @bind:event="oninput" @bind:after="Rafraichir" />
+                </div>
+                <div class="col-6 col-md-3">
+                    <select class="form-select" @bind="_categorie" @bind:after="Rafraichir">
+                        <option value="">Toutes catégories</option>
+                        @foreach (var c in RatioCalculator.Benchmarks.Keys)
+                        {
+                            <option value="@c">@c</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <select class="form-select" @bind="_statut" @bind:after="Rafraichir">
+                        <option value="">Tous statuts</option>
+                        <option value="cours">En cours</option>
+                        <option value="termine">Terminé</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-3">
+                    <select class="form-select" @bind="_tri" @bind:after="Rafraichir">
+                        <option value="meilleur">Meilleur ratio</option>
+                        <option value="pire">Pire ratio</option>
+                        <option value="cout">Coût annuel ↑</option>
+                        <option value="note">Note ↓</option>
+                        <option value="recent">Achat récent</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (_affiches.Count == 0)
+    {
+        <div class="alert alert-warning">Aucun article ne correspond à ces filtres.</div>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xxl-4 g-3">
+            @foreach (var l in _affiches)
+            {
+                <div class="col"><ArticleCard Item="l.Article" /></div>
+            }
+        </div>
+    }
+}
+
+@code {
+    private readonly List<ArticleEvalue> _affiches = [];
+    private string _recherche = "";
+    private string _categorie = "";
+    private string _statut = "";
+    private string _tri = "meilleur";
+
+    protected override async Task OnInitializedAsync()
+    {
+        ArticleService.Changed += Rafraichir;
+        await ArticleService.ChargerAsync();
+    }
+
+    private void Rafraichir()
+    {
+        IEnumerable<ArticleEvalue> src = ArticleService.Articles
+            .Select(a => new ArticleEvalue(a, RatioCalculator.Calculer(a)));
+
+        if (!string.IsNullOrWhiteSpace(_recherche))
+        {
+            var q = _recherche.Trim();
+            src = src.Where(l => l.Article.Nom.Contains(q, StringComparison.OrdinalIgnoreCase)
+                              || l.Article.Marque.Contains(q, StringComparison.OrdinalIgnoreCase));
+        }
+        if (!string.IsNullOrEmpty(_categorie))
+            src = src.Where(l => l.Article.Categorie == _categorie);
+        if (_statut == "cours")
+            src = src.Where(l => l.Article.Statut == StatutArticle.EnCours);
+        if (_statut == "termine")
+            src = src.Where(l => l.Article.Statut == StatutArticle.Termine);
+
+        _affiches.Clear();
+        _affiches.AddRange(_tri switch
+        {
+            "pire"   => src.OrderBy(l => l.Ratio.Score ?? double.MaxValue),
+            "cout"   => src.OrderBy(l => l.Ratio.CoutParAn),
+            "note"   => src.OrderByDescending(l => l.Article.Note),
+            "recent" => src.OrderByDescending(l => l.Article.DateAchat),
+            _        => src.OrderByDescending(l => l.Ratio.Score ?? double.MinValue),
+        });
+
+        StateHasChanged();
+    }
+
+    public void Dispose() => ArticleService.Changed -= Rafraichir;
+}
