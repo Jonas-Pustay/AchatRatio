@@ -122,7 +122,7 @@
             _message = $"Import réussi : {nb} article(s) — rechargement…";
 
             await Task.Delay(1500);
-            Nav.NavigateTo("/dashboard", forceLoad: true);
+            Nav.NavigateTo("dashboard", forceLoad: true);
         }
         catch (Exception ex) when (ex is System.Text.Json.JsonException
                                     or System.IO.InvalidDataException)

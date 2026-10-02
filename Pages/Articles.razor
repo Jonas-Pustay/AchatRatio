@@ -11,7 +11,7 @@
             @ArticleService.Articles.Count article(s) suivi(s) · @_affiches.Count affiché(s)
         </p>
     </div>
-    <a class="btn btn-primary" href="/article">＋ Ajouter un achat</a>
+    <a class="btn btn-primary" href="article">＋ Ajouter un achat</a>
 </div>
 
 @if (ArticleService.Articles.Count == 0)
@@ -20,7 +20,7 @@
         <span class="etat-vide-icone">📦</span>
         <h2 class="h4">Aucun article suivi pour l'instant</h2>
         <p class="text-muted">Enregistrez un achat pour commencer à mesurer son coût réel.</p>
-        <a class="btn btn-primary" href="/article">Ajouter un premier article</a>
+        <a class="btn btn-primary" href="article">Ajouter un premier article</a>
     </div>
 }
 else

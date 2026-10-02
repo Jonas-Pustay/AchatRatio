@@ -11,7 +11,7 @@
         <h1 class="page-titre">@(_estNouveau ? "Ajouter un article" : "Modifier l'article")</h1>
         <p class="page-sous-titre">Prix, date, note — le reste se calcule tout seul.</p>
     </div>
-    <a class="btn btn-outline-secondary" href="/articles">← Retour à la liste</a>
+    <a class="btn btn-outline-secondary" href="articles">← Retour à la liste</a>
 </div>
 
 <div class="card">
@@ -136,7 +136,7 @@
 
             <div class="col-12 d-flex gap-2 mt-4">
                 <button type="submit" class="btn btn-primary">Enregistrer</button>
-                <a class="btn btn-outline-secondary" href="/articles">Annuler</a>
+                <a class="btn btn-outline-secondary" href="articles">Annuler</a>
                 @if (!_estNouveau)
                 {
                     <button type="button" class="btn btn-outline-danger ms-auto" @onclick="Supprimer">Supprimer</button>
@@ -169,7 +169,7 @@
         var existant = ArticleService.Articles.FirstOrDefault(a => a.Id == Id);
         if (existant is null)
         {
-            Nav.NavigateTo("/articles");
+            Nav.NavigateTo("articles");
             return;
         }
 
@@ -228,7 +228,7 @@
             ?? (string.IsNullOrWhiteSpace(_urlImage) ? null : _urlImage.Trim());
 
         await ArticleService.SauvegarderAsync(_modele);
-        Nav.NavigateTo("/articles");
+        Nav.NavigateTo("articles");
     }
 
     private async Task Supprimer()
@@ -237,6 +237,6 @@
             return;
 
         await ArticleService.SupprimerAsync(_modele.Id);
-        Nav.NavigateTo("/articles");
+        Nav.NavigateTo("articles");
     }
 }
