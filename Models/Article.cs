@@ -31,7 +31,7 @@ public class Article
 
     // Facultatif — sert au calcul des économies (dashboard)
     public decimal? PrixBasDeGamme { get; set; }
-    public int? DureeVieBasDeGammeMois { get; set; }
+    public decimal? DureeVieBasDeGammeMois { get; set; }
 
     /// <summary>Copie indépendante : on édite la copie, on ne touche pas aux données
     /// persistées tant que l'utilisateur n'a pas enregistré.</summary>

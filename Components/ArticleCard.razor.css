@@ -35,3 +35,5 @@
     font-variant-numeric: tabular-nums; line-height: 1.1;
 }
 .carte-cout span { font-size: .72rem; font-weight: 600; color: var(--ar-encre-2); }
+
+.carte-approx { font-weight: 600; font-size: .9rem; color: var(--ar-encre-2); margin-right: .1rem; }

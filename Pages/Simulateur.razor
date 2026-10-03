@@ -5,7 +5,10 @@
 <div class="page-entete">
     <div>
         <h1 class="page-titre">Simulateur d'achat</h1>
-        <p class="page-sous-titre">Le low-cost à remplacer souvent, contre la qualité qui dure.</p>
+        <p class="page-sous-titre">
+            Le low-cost à remplacer souvent, contre la qualité qui dure.
+            Durées en mois — les quarts comptent (0,25 ≈ 1 semaine).
+        </p>
     </div>
 </div>
 
@@ -18,11 +21,11 @@
             <div class="row g-3">
                 <div class="col-6">
                     <label class="form-label">Prix (€)</label>
-                    <input type="number" class="form-control" min="0" step="1" @bind="_prixA" />
+                    <input type="number" class="form-control" min="0" step="0.5" @bind="_prixA" />
                 </div>
                 <div class="col-6">
                     <label class="form-label">Durée de vie (mois)</label>
-                    <input type="number" class="form-control" min="1" step="1" @bind="_dureeA" />
+                    <input type="number" class="form-control" min="0.25" step="0.25" @bind="_dureeA" />
                 </div>
             </div>
         </div></div>
@@ -36,11 +39,11 @@
             <div class="row g-3">
                 <div class="col-6">
                     <label class="form-label">Prix (€)</label>
-                    <input type="number" class="form-control" min="0" step="1" @bind="_prixB" />
+                    <input type="number" class="form-control" min="0" step="0.5" @bind="_prixB" />
                 </div>
                 <div class="col-6">
                     <label class="form-label">Durée de vie (mois)</label>
-                    <input type="number" class="form-control" min="1" step="1" @bind="_dureeB" />
+                    <input type="number" class="form-control" min="0.25" step="0.25" @bind="_dureeB" />
                 </div>
             </div>
         </div></div>
@@ -117,9 +120,9 @@
     // Valeurs par défaut = l'exemple chaussures du cahier des charges
     private decimal _prixA = 45;
     private decimal _prixB = 160;
-    private int _dureeA = 24;    // mois
-    private int _dureeB = 120;   // mois
-    private int _horizon = 10;   // années
+    private decimal _dureeA = 24m;    // mois — décimaux acceptés (0,25 ≈ 1 semaine)
+    private decimal _dureeB = 120m;
+    private int _horizon = 10;        // années
 
     private bool _valide => _prixA > 0 && _prixB > 0 && _dureeA > 0 && _dureeB > 0;
 
@@ -127,8 +130,8 @@
     private decimal _coutAnB => _prixB * 12m / _dureeB;
     private char _meilleurTaux => _coutAnB < _coutAnA ? 'B' : 'A';
 
-    private double _anneesA => _dureeA / 12.0;
-    private double _anneesB => _dureeB / 12.0;
+    private double _anneesA => (double)(_dureeA / 12m);
+    private double _anneesB => (double)(_dureeB / 12m);
 
     private int _unitesA => (int)Math.Ceiling(_horizon / _anneesA);
     private int _unitesB => (int)Math.Ceiling(_horizon / _anneesB);

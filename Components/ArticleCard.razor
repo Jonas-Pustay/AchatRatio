@@ -26,7 +26,13 @@
         @if (r.Lettre is not null)
         {
             <div class="d-flex align-items-baseline justify-content-between gap-2 flex-wrap mt-2">
-                <div class="carte-cout">@r.CoutParAn.ToString("0.##") €<span>/an</span></div>
+                <div class="carte-cout">
+                    @if (VueAnnuelle && r.VueAnnuelleEstProjection)
+                    {
+                        <span class="carte-approx">≈</span>
+                    }
+                    @r.CoutVue(VueAnnuelle).ToString("0.##") €<span>@r.UniteVue(VueAnnuelle)</span>
+                </div>
                 <div class="small text-muted">@RatioCalculator.FormatJours(r.DureeVieJours) d'usage</div>
             </div>
         }
@@ -43,6 +49,10 @@
 
 @code {
     [Parameter, EditorRequired] public Article Item { get; set; } = default!;
+
+    /// <summary>Affiche tous les coûts en €/an (avec « ≈ » quand l'usage
+    /// constaté couvre moins d'un an).</summary>
+    [Parameter] public bool VueAnnuelle { get; set; }
 
     private string ImageSrc => string.IsNullOrWhiteSpace(Item.ImageUrl)
         ? "img/placeholder.svg"

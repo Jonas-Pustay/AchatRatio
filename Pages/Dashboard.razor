@@ -32,10 +32,10 @@ else
         </div>
         <div class="col-6 col-lg-3">
             <div class="kpi">
-                <span class="kpi-icone kpi-icone--bleu">📅</span>
+                <span class="kpi-icone kpi-icone--bleu">📊</span>
                 <div>
-                    <div class="kpi-valeur">@_coutMoyenAn.ToString("0.## €")</div>
-                    <div class="kpi-libelle">coût moyen / an</div>
+                    <div class="kpi-valeur">@_coutParMois.ToString("0.## €")</div>
+                    <div class="kpi-libelle">coût d'usage / mois</div>
                 </div>
             </div>
         </div>
@@ -154,7 +154,7 @@ else
     private List<(string Categorie, double ScoreMoyen, int Nb)> _categories = [];
 
     private decimal _totalInvesti;
-    private decimal _coutMoyenAn;
+    private decimal _coutParMois;
     private double _scoreMoyen;
     private decimal _economies;
     private int _remplacementsEvites;
@@ -169,7 +169,7 @@ else
         _totalInvesti = _lignes.Sum(l => l.Article.PrixAchat);
 
         var fiables = _lignes.Where(l => l.Ratio.EstimationFiable).ToList();
-        _coutMoyenAn = fiables.Count > 0 ? fiables.Average(l => l.Ratio.CoutParAn) : 0;
+        _coutParMois = fiables.Sum(l => l.Ratio.CoutParMois);
 
         var notes = _lignes.Where(l => l.Ratio.Score is not null).ToList();
         _scoreMoyen = notes.Count > 0 ? notes.Average(l => l.Ratio.Score!.Value) : 0;

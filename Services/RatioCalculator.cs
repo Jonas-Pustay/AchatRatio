@@ -7,27 +7,70 @@ public record ResultatRatio(
     double DureeVieAnnees,
     decimal CoutParAn,
     decimal CoutParMois,
+    decimal CoutParJour,
     decimal? PrixParPoint,
     double? Score,          // 0..100, null si non évaluable
     char? Lettre,           // A..E
-    bool EstimationFiable); // false => "estimation préliminaire"
+    bool EstimationFiable)
+{
+    /// <summary>Unité « naturelle » selon la durée d'usage :
+    /// /jour sous 30 jours, /mois jusqu'à 1 an, /an au-delà.</summary>
+    public string UniteNaturelle => DureeVieJours switch
+    {
+        < RatioCalculator.SeuilMois => "/jour",
+        < RatioCalculator.SeuilAn   => "/mois",
+        _                           => "/an"
+    };
+
+    /// <summary>Coût dans l'unité naturelle.</summary>
+    public decimal CoutNaturel => UniteNaturelle switch
+    {
+        "/jour" => CoutParJour,
+        "/mois" => CoutParMois,
+        _       => CoutParAn
+    };
+
+    /// <summary>Vue annualisée : tout est ramené en €/an.</summary>
+    public decimal CoutVue(bool vueAnnuelle) => vueAnnuelle ? CoutParAn : CoutNaturel;
+    public string UniteVue(bool vueAnnuelle) => vueAnnuelle ? "/an" : UniteNaturelle;
+
+    /// <summary>Annualiser un usage constaté de moins d'un an est une extrapolation
+    /// (on suppose le rythme constant sur l'année) → mérite un « ≈ ».</summary>
+    public bool VueAnnuelleEstProjection => DureeVieJours < 365;
+}
 
 public static class RatioCalculator
 {
-    /// <summary>Coût annuel de référence par catégorie (ScorePrix = 50 à ce niveau).</summary>
+    /// <summary>Benchmarks de coût ANNUEL par catégorie (ScorePrix = 50 à ce
+    /// niveau). Ce sont les curseurs de calibration de l'app.</summary>
     public static readonly Dictionary<string, decimal> Benchmarks = new()
     {
+        // Biens durables
         ["Vêtements"]       = 25m,
         ["Chaussures"]      = 25m,
         ["Électroménager"]  = 60m,
         ["High-Tech"]       = 150m,
         ["Meubles"]         = 40m,
         ["Sport & Loisirs"] = 30m,
+
+        // Consommables — benchmarks en équivalent annuel
+        ["Hygiène & Soins"] = 50m,
+        ["Entretien"]       = 60m,
+        ["Alimentation"]    = 250m,
+
         ["Divers"]          = 50m,
     };
 
-    /// <summary>En dessous, la durée observée est trop courte pour être parlante.</summary>
+    /// <summary>Un article EN COURS a besoin de cette durée d'usage pour qu'une
+    /// estimation commence à être parlante. Un article TERMINÉ est une mesure
+    /// définitive, quelle que soit sa durée (mayonnaise finie en 2 semaines…).</summary>
     public const int JoursMinFiabilite = 45;
+    /// <summary>Seuils d'affichage, en jours d'usage : sous SeuilMois → jours et
+    /// €/jour ; de SeuilMois à SeuilAn-1 → mois et €/mois ; à partir de SeuilAn →
+    /// années et €/an. Les deux curseurs de l'affichage — la durée affichée
+    /// (FormatAnnees) suit exactement les mêmes frontières.</summary>
+    public const int SeuilMois = 30;
+    public const int SeuilAn = 365;
 
     public static ResultatRatio Calculer(Article a, DateOnly? aujourdHui = null)
     {
@@ -43,13 +86,15 @@ public static class RatioCalculator
 
         var coutAn   = annees > 0 ? a.PrixAchat / (decimal)annees : a.PrixAchat;
         var coutMois = mois  > 0 ? a.PrixAchat / (decimal)mois   : a.PrixAchat;
+        var coutJour = jours > 0 ? a.PrixAchat / jours           : a.PrixAchat;
 
         var prixParPoint = a.Note > 0 ? a.PrixAchat / a.Note : (decimal?)null;
 
+        var fiable = jours >= 1
+                  && (a.Statut == StatutArticle.Termine || jours >= JoursMinFiabilite);
+
         double? score = null;
         char? lettre  = null;
-        var fiable     = jours >= JoursMinFiabilite;
-
         if (fiable && a.Note > 0)
         {
             var benchmark = Benchmarks.TryGetValue(a.Categorie, out var b) ? b : Benchmarks["Divers"];
@@ -67,7 +112,7 @@ public static class RatioCalculator
             };
         }
 
-        return new ResultatRatio(jours, annees, coutAn, coutMois,
+        return new ResultatRatio(jours, annees, coutAn, coutMois, coutJour,
                                  prixParPoint, score, lettre, fiable);
     }
 
@@ -83,7 +128,7 @@ public static class RatioCalculator
     }
 
     /// <summary>Économie réalisée en achetant la qualité plutôt que le bas de gamme,
-    /// mesurée sur la durée de vie réelle constatée de l'article.</summary>
+    /// sur la durée de vie réelle constatée. Durée en mois décimaux (0,25 ≈ 1 semaine).</summary>
     public static (decimal Economie, int RemplacementsEvites)? EstimerEconomie(Article a)
     {
         if (a.PrixBasDeGamme is null || a.PrixBasDeGamme <= 0 || a.DureeVieBasDeGammeMois is null)
@@ -94,7 +139,7 @@ public static class RatioCalculator
                     ? a.DateFin.Value : today;
 
         var anneesReelles = Math.Max(0, fin.DayNumber - a.DateAchat.DayNumber) / 365.25;
-        var dureeLow = a.DureeVieBasDeGammeMois.Value / 12.0;
+        var dureeLow = (double)a.DureeVieBasDeGammeMois.Value / 12.0;
 
         if (anneesReelles <= 0 || dureeLow <= 0) return null;
 
@@ -103,19 +148,31 @@ public static class RatioCalculator
                 achatsLowCostNecessaires - 1);
     }
 
-    /// <summary>1,77 an → "1 an et 9 mois".</summary>
+    /// <summary>29 jours → "29 jours" · 40 jours → "1 mois" · 364 jours → "12 mois" ·
+    /// 2,1 ans → "2 ans et 1 mois". Suit les mêmes seuils que l'unité (SeuilMois/SeuilAn).</summary>
     public static string FormatAnnees(double annees)
     {
-        var a = (int)Math.Floor(annees);
-        var m = (int)Math.Round((annees - a) * 12);
-        if (m == 12) { a++; m = 0; }
-        return (a, m) switch
+        var jours = annees * 365.25;
+
+        if (jours < SeuilMois)          // moins de 30 jours : en jours
         {
-            (0, 0) => "moins d'un mois",
-            (0, _) => $"{m} mois",
-            (_, 0) => $"{a} an{(a > 1 ? "s" : "")}",
-            _      => $"{a} an{(a > 1 ? "s" : "")} et {m} mois"
-        };
+            var n = Math.Max(1, (int)Math.Round(jours));
+            return $"{n} jour{(n > 1 ? "s" : "")}";
+        }
+
+        if (jours < SeuilAn)            // de 30 jours à 1 an : en mois
+        {
+            var m = Math.Max(1, (int)Math.Round(jours / 30.44));
+            return $"{m} mois";
+        }
+
+        // 1 an et plus
+        var a = (int)Math.Floor(annees);
+        var r = (int)Math.Round((annees - a) * 12);
+        if (r == 12) { a++; r = 0; }
+        return r == 0
+            ? $"{a} an{(a > 1 ? "s" : "")}"
+            : $"{a} an{(a > 1 ? "s" : "")} et {r} mois";
     }
 
     public static string FormatJours(double jours) => FormatAnnees(jours / 365.25);

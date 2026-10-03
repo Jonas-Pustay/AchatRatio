@@ -1,6 +1,9 @@
 @if (Items.Count == 0)
 {
-    <p class="text-muted small mb-0">Pas encore assez de données (durée d'usage ≥ 45 jours requise).</p>
+    <p class="text-muted small mb-0">
+        Pas encore d'article évaluable — marquez vos articles « Terminé » quand
+        leur vie est finie, ou laissez-leur 45 jours d'usage.
+    </p>
 }
 else
 {
@@ -13,7 +16,7 @@ else
                     <span class="text-muted small">· @l.Article.Marque</span>
                 </span>
                 <span class="d-flex align-items-center gap-2 flex-shrink-0">
-                    <span class="small text-muted">@l.Ratio.CoutParAn.ToString("0.##") €/an</span>
+                    <span class="small text-muted">@l.Ratio.CoutNaturel.ToString("0.##") €@l.Ratio.UniteNaturelle</span>
                     @if (l.Ratio.Lettre is char lettre)
                     {
                         <RatioBadge Lettre="lettre" Score="l.Ratio.Score ?? 0" />

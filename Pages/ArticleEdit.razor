@@ -124,8 +124,8 @@
                             <InputNumber class="form-control" @bind-Value="_modele.PrixBasDeGamme" />
                         </div>
                         <div class="col-6 col-md-4">
-                            <label class="form-label">Durée de vie bas de gamme (mois)</label>
-                            <InputNumber class="form-control" @bind-Value="_modele.DureeVieBasDeGammeMois" />
+                            <label class="form-label">Durée de vie bas de gamme (mois — 0,25 ≈ 1 semaine)</label>
+                            <InputNumber class="form-control" step="0.25" @bind-Value="_modele.DureeVieBasDeGammeMois" />
                         </div>
                     </div>
                     <p class="text-muted small mb-0 mt-2">
@@ -197,8 +197,6 @@
 
         try
         {
-            // Lecture + redimensionnement 100 % côté navigateur : seul le
-            // résultat compressé (~60 Ko) revient par l'interop.
             _imageUploadee = await JS.InvokeAsync<string>(
                 "achatRatio.redimensionnerFichier", "champ-image", 512, 0.75);
 
